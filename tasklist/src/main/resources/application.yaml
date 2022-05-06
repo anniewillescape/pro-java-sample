@@ -1,0 +1,12 @@
+server:
+  port: 8888
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:~/taskdb
+    username: annie
+    password: anniedb
+    initialization-mode: always
+  h2:
+    console:
+      enabled: true
