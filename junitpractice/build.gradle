@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'jacoco'
 }
 
 group 'jp.annie.projava'
@@ -16,4 +17,24 @@ dependencies {
 
 test {
     useJUnitPlatform()
+
+    finalizedBy {
+        jacocoTestReport
+    }
+}
+
+// jacocoのレポートから除外するクラスファイル。
+def coverageExcludeFiles = [
+        // 内部クラスやLambda匿名クラスを排除
+        '**/*$*.class',
+        '**/*$lambda$*.class',
+]
+
+// jacocoTestReportタスク
+jacocoTestReport {
+    afterEvaluate {
+        classDirectories.setFrom(classDirectories.files.collect {
+            fileTree(dir: it, excludes: coverageExcludeFiles)
+        })
+    }
 }
