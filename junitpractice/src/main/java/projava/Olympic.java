@@ -13,16 +13,16 @@ public class Olympic {
      */
     public boolean isSummerOlympicYear(int year) {
 
-        var canceledYears = List.of(1916, 1940, 1944, 2020);
-        var exceptionalHeldYears = List.of(2021);
+        final var CANCELED_YEARS = List.of(1916, 1940, 1944, 2020);
+        final var EXCEPTIONAL_HELD_YEARS = List.of(2021);
 
         if (year < 1896) {
             return false;
         } else if (year > 2032) {
             throw new IllegalArgumentException("This program supports values up to 2032. Input year: " + year);
-        } else if (canceledYears.contains(year)) {
+        } else if (CANCELED_YEARS.contains(year)) {
             return false;
-        } else if (exceptionalHeldYears.contains(year)) {
+        } else if (EXCEPTIONAL_HELD_YEARS.contains(year)) {
             return true;
         }
         return year % 4 == 0;
