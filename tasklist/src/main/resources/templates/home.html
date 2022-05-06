@@ -23,15 +23,27 @@
   <div class="tasklist">
     <h2>現在のタスク一覧</h2>
     <table border="1" style="border-collapse:collapse;">
-      <thread>
-        <tr><th class="hidden">ID</th><th>タスク</th><th>期限</th><th>状態</th></tr>
-      </thread>
+      <thead>
+        <tr>
+          <th class="hidden">ID</th>
+          <th>タスク</th>
+          <th width="150px">期限</th>
+          <th width="100px">状態</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody>
         <tr th:each="task : ${taskList}">
           <td class="hidden" th:text="${task.id}"></td>
           <td th:text="${task.task}"></td>
           <td width="100px" th:text="${task.deadline}"></td>
           <td class="task_done" width="50px" th:text="${task.done} ? '完了' : '未完了'"></td>
+          <td width="50px">
+            <form action="/delete">
+              <button type="submit" id="delete_button">削除</button>
+              <input type="hidden" name="id" th:value="${task.id}" />
+            </form>
+          </td>
         </tr>
       </tbody>
     </table>
