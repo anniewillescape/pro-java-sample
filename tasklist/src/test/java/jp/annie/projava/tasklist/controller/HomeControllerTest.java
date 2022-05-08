@@ -10,6 +10,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -17,7 +19,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,14 +55,22 @@ class HomeControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(target).build();
     }
 
+    private static final LocalDateTime now = LocalDateTime.of(2022, 5, 8, 13, 0, 0);
+
+    private static final UUID uuid = UUID.fromString("12345678-0000-0000-0000-000000000000");
+
     @Test
     @DisplayName("/hello endpoint - 正常")
     void hello() throws Exception {
 
-        // TODO LocalDateTime.now()がmodelに入っていることを確認する
+        // LocalDateTime.now() をmock化
+        MockedStatic<LocalDateTime> mock = Mockito.mockStatic(LocalDateTime.class);
+        mock.when(LocalDateTime::now).thenReturn(now);
+
         mockMvc.perform(get("/hello/"))
                 .andDo(print()) // リクエスト詳細
                 .andExpect(status().isOk())
+                .andExpect(model().attribute("time", now))
                 .andExpect(view().name("hello"));
     }
 
@@ -93,6 +105,10 @@ class HomeControllerTest {
     @DisplayName("/add endpoint - 正常")
     void addItem() throws Exception {
 
+        // UUID.fromString() の mock化
+        MockedStatic<UUID> mock = Mockito.mockStatic(UUID.class);
+        mock.when(UUID::randomUUID).thenReturn(uuid);
+
         mockMvc.perform(get("/add/")
                         .param("task", "task1")
                         .param("deadline", "2022-05-08"))
@@ -104,9 +120,9 @@ class HomeControllerTest {
         verify(dao, times(1)).add(varArgs.capture());
 
         var capturedItem = varArgs.getValue();
+        var expectedTaskItem = new TaskItem("12345678", "task1", "2022-05-08", false);
 
-        assertEquals("task1", capturedItem.task());
-        assertEquals("2022-05-08", capturedItem.deadline());
+        assertEquals(expectedTaskItem, capturedItem);
     }
 
     @Test
@@ -154,7 +170,7 @@ class HomeControllerTest {
                 .andDo(print())
                 .andExpect(status().isBadRequest());
     }
-    
+
     @Test
     @DisplayName("/update endpoint - 正常")
     void updateItem() throws Exception {
