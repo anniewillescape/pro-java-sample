@@ -5,6 +5,10 @@ import jp.annie.projava.tasklist.dao.TaskListDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +18,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
+import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -53,31 +62,31 @@ class HomeControllerTest {
                 .andExpect(view().name("hello"));
     }
 
-    @Test
+    @ParameterizedTest
     @DisplayName("/list endpoint - 正常")
-    void listItems() throws Exception {
+    @MethodSource("taskItems")
+    void listItems(List<TaskItem> taskItems) throws Exception {
 
         // 登録済のタスクが0件のケース
-        when(this.dao.findAll()).thenReturn(List.of());
+        when(this.dao.findAll()).thenReturn(taskItems);
 
         mockMvc.perform(get("/list/"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("taskList", List.of()))
+                .andExpect(model().attribute("taskList", taskItems))
                 .andExpect(view().name("home"));
 
-        // 登録済のタスクがあるケース
-        var expectTaskItems = List.of(
-                new TaskItem("1", "task1", "2022-05-01", false),
-                new TaskItem("2", "task2", "2022-05-03", true)
+        verify(dao, times(1)).findAll();
+    }
+
+    static Stream<Arguments> taskItems() {
+        return Stream.of(
+                arguments(List.of()),
+                arguments(List.of(
+                        new TaskItem("1", "task1", "2022-05-01", false),
+                        new TaskItem("2", "task2", "2022-05-03", true)
+                ))
         );
-        when(this.dao.findAll()).thenReturn(expectTaskItems);
-
-        mockMvc.perform(get("/list/"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("taskList", expectTaskItems))
-                .andExpect(view().name("home"));
     }
 
     @Test
@@ -87,8 +96,17 @@ class HomeControllerTest {
         mockMvc.perform(get("/add/")
                         .param("task", "task1")
                         .param("deadline", "2022-05-08"))
+                .andDo(print())
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/list"));
+
+        ArgumentCaptor<TaskItem> varArgs = ArgumentCaptor.forClass(TaskItem.class);
+        verify(dao, times(1)).add(varArgs.capture());
+
+        var capturedItem = varArgs.getValue();
+
+        assertEquals("task1", capturedItem.task());
+        assertEquals("2022-05-08", capturedItem.deadline());
     }
 
     @Test
@@ -97,33 +115,79 @@ class HomeControllerTest {
 
         mockMvc.perform(get("/add/")
                         .param("task", "task1"))
+                .andDo(print())
                 .andExpect(status().isBadRequest());
 
         mockMvc.perform(get("/add/")
                         .param("deadline", "2022-05-08"))
+                .andDo(print())
                 .andExpect(status().isBadRequest());
 
         mockMvc.perform(get("/add/"))
+                .andDo(print())
                 .andExpect(status().isBadRequest());
     }
 
-    // TODO: /delete endpointの正常系
+    @Test
+    @DisplayName("/delete endpoint - 正常")
+    void deleteItem() throws Exception {
+
+        mockMvc.perform(get("/delete/")
+                        .param("id", "task_id_1"))
+                .andDo(print())
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/list"));
+
+        ArgumentCaptor<String> varArgs = ArgumentCaptor.forClass(String.class);
+        verify(dao, times(1)).delete(varArgs.capture());
+
+        var capturedItem = varArgs.getValue();
+        assertEquals("task_id_1", capturedItem);
+    }
+
 
     @Test
     @DisplayName("/delete endpoint - 必須パラメータなし")
-    void deleteItem() throws Exception {
+    void deleteItem_401() throws Exception {
 
         mockMvc.perform(get("/delete"))
+                .andDo(print())
                 .andExpect(status().isBadRequest());
     }
+    
+    @Test
+    @DisplayName("/update endpoint - 正常")
+    void updateItem() throws Exception {
 
-    // TODO: /update endpointの正常系
+        var taskId = "task_id_1";
+        var taskName = "task_name_1";
+        var deadline = "2022-05-12";
+        var done = false;
+
+        mockMvc.perform(get("/update/")
+                        .param("id", taskId)
+                        .param("task", taskName)
+                        .param("deadline", deadline)
+                        .param("done", String.valueOf(done)))
+                .andDo(print())
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/list"));
+
+        var expectedTaskItem = new TaskItem(taskId, taskName, deadline, done);
+
+        ArgumentCaptor<TaskItem> varArgs = ArgumentCaptor.forClass(TaskItem.class);
+        verify(dao, times(1)).update(varArgs.capture());
+
+        var capturedItem = varArgs.getValue();
+        assertEquals(expectedTaskItem, capturedItem);
+    }
 
     @Test
     @DisplayName("/update endpoint - 必須パラメータなし")
-    void updateItem() throws Exception {
+    void updateItem_401() throws Exception {
 
         mockMvc.perform(get("/update/"))
+                .andDo(print())
                 .andExpect(status().isBadRequest());
     }
 }
