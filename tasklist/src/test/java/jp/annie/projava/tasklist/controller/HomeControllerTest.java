@@ -72,6 +72,8 @@ class HomeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("time", now))
                 .andExpect(view().name("hello"));
+
+        mock.close();
     }
 
     @ParameterizedTest
@@ -79,7 +81,6 @@ class HomeControllerTest {
     @MethodSource("taskItems")
     void listItems(List<TaskItem> taskItems) throws Exception {
 
-        // 登録済のタスクが0件のケース
         when(this.dao.findAll()).thenReturn(taskItems);
 
         mockMvc.perform(get("/list/"))
@@ -123,6 +124,8 @@ class HomeControllerTest {
         var expectedTaskItem = new TaskItem("12345678", "task1", "2022-05-08", false);
 
         assertEquals(expectedTaskItem, capturedItem);
+
+        mock.close();
     }
 
     @Test

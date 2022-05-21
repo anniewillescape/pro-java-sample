@@ -16,9 +16,9 @@ public class HomeRestController {
     record TaskItem(String id, String task, String deadline, boolean done) {
     }
 
-    private List<TaskItem> taskItems = new ArrayList<>();
+    List<TaskItem> taskItems = new ArrayList<>();
 
-    @RequestMapping(value = "/resthello")
+    @RequestMapping(value = "/resthello", produces = "application/json;charset=UTF-8")
     String hello() {
         return """
                 Hello.
@@ -27,7 +27,7 @@ public class HomeRestController {
                 """.formatted(LocalDateTime.now());
     }
 
-    @RequestMapping(value = "/restadd")
+    @RequestMapping(value = "/restadd", produces = "application/json;charset=UTF-8")
     String addItem(@RequestParam("task") String task, @RequestParam("deadline") String deadline) {
 
         String id = UUID.randomUUID().toString().substring(0, 8);
