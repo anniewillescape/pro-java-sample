@@ -5,7 +5,7 @@ jobs:
   build:
     name: build by Gradle
     runs-on: ubuntu-latest
-    if: contains(github.head_ref, 'feature')
+    if: contains(github.head_ref, 'feature') || contains(github.head_ref, 'dependabot/gradle/tasklist')
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
